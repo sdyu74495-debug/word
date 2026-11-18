@@ -1,0 +1,1779 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>صِياغَة | استوديو إعداد المذكرات بالذكاء الاصطناعي</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://unpkg.com/mammoth@1.6.0/mammoth.browser.min.js"></script>
+  <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
+
+  <style>
+    :root {
+      --bg-canvas: #f3f5f8;
+      --dot-color: #cbd5e1;
+      --bg-surface: rgba(255, 255, 255, 0.9);
+      --bg-card: #ffffff;
+      --text-primary: #1e293b;
+      --text-secondary: #64748b;
+      --border-subtle: rgba(203, 213, 225, 0.75);
+      --accent: #0f766e;
+      --accent-light: #f0fdfa;
+      --accent-hover: #115e59;
+      --ai-purple: #6d28d9;
+      --ai-light: #f5f3ff;
+      --paper-bg: #ffffff;
+      --paper-shadow: 0 24px 48px -12px rgba(15, 23, 42, 0.12), 0 4px 16px -2px rgba(15, 23, 42, 0.04);
+      --zoom-scale: 1;
+    }
+
+    body.warm-mode {
+      --bg-canvas: #f5f0e6;
+      --dot-color: #d6cbb8;
+      --bg-surface: rgba(252, 248, 240, 0.94);
+      --bg-card: #fdfaf3;
+      --text-primary: #292524;
+      --text-secondary: #78716c;
+      --border-subtle: #e6dec8;
+      --accent: #9a3412;
+      --accent-light: #fff7ed;
+      --accent-hover: #7c2d12;
+      --paper-bg: #fffdf9;
+    }
+
+    body.dark-mode {
+      --bg-canvas: #0b1120;
+      --dot-color: #1e293b;
+      --bg-surface: rgba(30, 41, 59, 0.9);
+      --bg-card: #162032;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --border-subtle: #2a3952;
+      --accent: #14b8a6;
+      --accent-light: rgba(20, 184, 166, 0.14);
+      --accent-hover: #0d9488;
+      --ai-purple: #a78bfa;
+      --ai-light: rgba(139, 92, 246, 0.15);
+      --paper-bg: #ffffff;
+      --paper-shadow: 0 25px 55px -12px rgba(0, 0, 0, 0.7);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Cairo', sans-serif;
+      background-color: var(--bg-canvas);
+      background-image: radial-gradient(var(--dot-color) 1.2px, transparent 1.2px);
+      background-size: 22px 22px;
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .topbar {
+      background: var(--bg-surface);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 12px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+      position: sticky;
+      top: 0;
+      z-index: 300;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 13px;
+      background: linear-gradient(135deg, var(--accent), #0d9488);
+      color: #ffffff;
+      display: grid;
+      place-items: center;
+      font-size: 21px;
+      font-weight: 800;
+      box-shadow: 0 4px 14px rgba(15, 118, 110, 0.28);
+    }
+
+    .brand-info h1 {
+      font-size: 19px;
+      font-weight: 800;
+    }
+
+    .brand-info p {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+    }
+
+    .doc-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      padding: 7px 18px;
+      border-radius: 99px;
+      transition: 0.2s;
+    }
+
+    .doc-pill:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-light);
+    }
+
+    .doc-pill input {
+      border: none;
+      background: transparent;
+      color: var(--text-primary);
+      font-family: 'Cairo', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      min-width: 240px;
+      outline: none;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      font-family: 'Cairo', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 8px 16px;
+      border-radius: 11px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-ghost {
+      background: var(--bg-card);
+      border-color: var(--border-subtle);
+      color: var(--text-primary);
+    }
+    .btn-ghost:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .btn-word {
+      background: #eff6ff;
+      color: #1e40af;
+      border-color: #bfdbfe;
+    }
+    .btn-word:hover {
+      background: #dbeafe;
+      transform: translateY(-1px);
+    }
+
+    .btn-accent {
+      background: var(--accent);
+      color: #ffffff;
+      box-shadow: 0 3px 10px rgba(15, 118, 110, 0.25);
+    }
+    .btn-accent:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+
+    .ribbon-wrapper {
+      position: sticky;
+      top: 72px;
+      z-index: 250;
+      display: flex;
+      justify-content: center;
+      padding: 10px 16px 0 16px;
+      pointer-events: none;
+    }
+
+    .ribbon-bar {
+      pointer-events: auto;
+      background: var(--bg-surface);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 7px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      box-shadow: 0 8px 24px -6px rgba(15, 23, 42, 0.08);
+    }
+
+    .ribbon-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding-left: 10px;
+      border-left: 1px solid var(--border-subtle);
+    }
+    .ribbon-group:last-child {
+      border-left: none;
+      padding-left: 0;
+    }
+
+    .r-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-primary);
+      padding: 6px 11px;
+      border-radius: 9px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .r-btn:hover {
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+    .r-btn.active-pill {
+      background: var(--accent-light);
+      color: var(--accent);
+      border-color: rgba(15, 118, 110, 0.25);
+    }
+
+    select.r-select {
+      padding: 6px 10px;
+      border-radius: 9px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-family: 'Cairo', sans-serif;
+      font-size: 12.5px;
+      font-weight: 700;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .studio-grid {
+      display: flex;
+      flex: 1;
+      max-width: 1620px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 20px 24px;
+      gap: 24px;
+    }
+
+    body.focus-mode .sidebar-col,
+    body.focus-mode .nav-col {
+      display: none !important;
+    }
+
+    .sidebar-col {
+      width: 325px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .nav-col {
+      width: 200px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .glass-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.025);
+    }
+
+    /* بطاقة الذكاء الاصطناعي */
+    .ai-card {
+      background: var(--bg-card);
+      border: 1.5px solid rgba(109, 40, 217, 0.4);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 8px 24px rgba(109, 40, 217, 0.09);
+    }
+
+    .ai-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .ai-badge {
+      background: var(--ai-light);
+      color: var(--ai-purple);
+      font-size: 13px;
+      font-weight: 800;
+      padding: 4px 12px;
+      border-radius: 99px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ai-status-pill {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #059669;
+      background: #ecfdf5;
+      padding: 2px 8px;
+      border-radius: 99px;
+    }
+
+    .ai-prompt-box {
+      width: 100%;
+      min-height: 85px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-canvas);
+      color: var(--text-primary);
+      font-family: 'Cairo', sans-serif;
+      font-size: 12.5px;
+      resize: vertical;
+      outline: none;
+      margin-bottom: 8px;
+      transition: 0.2s;
+    }
+    .ai-prompt-box:focus {
+      border-color: var(--ai-purple);
+      background: var(--bg-card);
+    }
+
+    .ai-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+
+    .ai-chip {
+      background: var(--ai-light);
+      color: var(--ai-purple);
+      border: none;
+      padding: 4px 9px;
+      border-radius: 7px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .ai-chip:hover {
+      opacity: 0.82;
+    }
+
+    .ai-actions-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-ai-run {
+      flex: 1;
+      background: linear-gradient(135deg, #6d28d9, #4f46e5);
+      color: #ffffff;
+      border: none;
+      padding: 10px 12px;
+      border-radius: 11px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: 0.2s;
+    }
+    .btn-ai-run:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 5px 15px rgba(109, 40, 217, 0.3);
+    }
+    .btn-ai-run:disabled {
+      opacity: 0.65;
+      cursor: wait;
+    }
+
+    .btn-ai-append {
+      background: var(--ai-light);
+      color: var(--ai-purple);
+      border: 1px solid rgba(109, 40, 217, 0.25);
+      padding: 10px;
+      border-radius: 11px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .btn-ai-append:hover {
+      background: rgba(109, 40, 217, 0.16);
+    }
+
+    .ai-api-toggle {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 8px;
+      cursor: pointer;
+      display: inline-block;
+      text-decoration: underline;
+    }
+
+    .ai-key-drawer {
+      margin-top: 8px;
+      display: none;
+    }
+    .ai-key-drawer.open {
+      display: block;
+    }
+    .ai-key-drawer input {
+      width: 100%;
+      padding: 7px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-canvas);
+      color: var(--text-primary);
+      font-size: 11.5px;
+    }
+
+    .card-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      margin-bottom: 12px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .tpl-card {
+      width: 100%;
+      text-align: right;
+      background: var(--bg-canvas);
+      border: 1px solid transparent;
+      color: var(--text-primary);
+      padding: 10px 12px;
+      border-radius: 12px;
+      margin-bottom: 7px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s;
+      display: block;
+    }
+    .tpl-card:hover {
+      background: var(--accent-light);
+      border-color: var(--accent);
+      transform: translateX(-2px);
+    }
+    .tpl-card span {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .custom-tpl-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-canvas);
+      padding: 8px 10px;
+      border-radius: 10px;
+      margin-bottom: 6px;
+      border: 1px solid var(--border-subtle);
+    }
+    .custom-tpl-name {
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      flex: 1;
+    }
+    .custom-tpl-name:hover {
+      color: var(--accent);
+    }
+    .custom-tpl-del {
+      background: none;
+      border: none;
+      color: #e11d48;
+      cursor: pointer;
+      font-size: 13px;
+      padding: 2px 6px;
+    }
+
+    .btn-save-tpl {
+      width: 100%;
+      background: var(--accent-light);
+      color: var(--accent);
+      border: 1.5px dashed var(--accent);
+      padding: 8px;
+      border-radius: 11px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 12.5px;
+      font-weight: 800;
+      cursor: pointer;
+      margin-bottom: 10px;
+      transition: 0.2s;
+    }
+    .btn-save-tpl:hover {
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    .theme-switcher {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .theme-opt {
+      padding: 8px 4px;
+      border-radius: 9px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-canvas);
+      color: var(--text-primary);
+      font-family: 'Cairo', sans-serif;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      transition: 0.2s;
+    }
+    .theme-opt.active {
+      border-color: var(--accent);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .field-box {
+      margin-bottom: 10px;
+    }
+    .field-box label {
+      display: block;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+    .field-box input[type="text"] {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 9px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-canvas);
+      color: var(--text-primary);
+      font-family: 'Cairo', sans-serif;
+      font-size: 12.5px;
+      outline: none;
+    }
+
+    .check-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      font-weight: 600;
+      margin-top: 8px;
+      cursor: pointer;
+    }
+
+    .page-nav-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 450px;
+      overflow-y: auto;
+    }
+    .page-nav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: var(--bg-canvas);
+      border: 1px solid transparent;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .page-nav-item:hover, .page-nav-item.active {
+      border-color: var(--accent);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .canvas-center {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: auto;
+      padding-bottom: 80px;
+    }
+
+    .canvas-hud {
+      width: 210mm;
+      max-width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding: 7px 16px;
+      background: var(--bg-surface);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-secondary);
+    }
+
+    .zoom-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .zoom-pill button {
+      width: 24px;
+      height: 24px;
+      border-radius: 7px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .pages-list {
+      display: flex;
+      flex-direction: column;
+      gap: 38px;
+      transform: scale(var(--zoom-scale));
+      transform-origin: top center;
+      transition: transform 0.2s ease;
+    }
+
+    .page-unit {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .page-header-strip {
+      width: 210mm;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      padding: 0 6px;
+    }
+
+    .page-tag {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      font-size: 12px;
+      font-weight: 800;
+      padding: 4px 14px;
+      border-radius: 99px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+    }
+
+    .page-tools {
+      display: flex;
+      gap: 6px;
+    }
+
+    .p-tool-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      font-family: 'Cairo', sans-serif;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 4px 11px;
+      border-radius: 9px;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .p-tool-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .p-tool-btn.del:hover {
+      border-color: #e11d48;
+      color: #e11d48;
+      background: #fff1f2;
+    }
+
+    .a4-paper {
+      width: 210mm;
+      height: 297mm;
+      background: var(--paper-bg);
+      color: #000000;
+      padding: 16mm 18mm 14mm 18mm;
+      border-radius: 6px;
+      box-shadow: var(--paper-shadow);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+
+    .running-head {
+      font-family: 'Cairo', sans-serif;
+      font-size: 10pt;
+      color: #475569;
+      border-bottom: 1px solid #cbd5e1;
+      padding-bottom: 4pt;
+      margin-bottom: 8pt;
+      display: flex;
+      justify-content: space-between;
+    }
+    .running-head:empty {
+      display: none;
+    }
+
+    .watermark-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-35deg);
+      font-size: 50pt;
+      font-weight: 700;
+      color: rgba(0, 0, 0, 0.04);
+      pointer-events: none;
+      white-space: nowrap;
+      user-select: none;
+      z-index: 0;
+    }
+
+    .paper-editable {
+      flex: 1;
+      position: relative;
+      z-index: 1;
+      font-family: 'Amiri', 'Traditional Arabic', serif;
+      font-size: 17pt;
+      line-height: 1.72;
+      outline: none;
+      overflow-y: auto;
+      color: #000000;
+    }
+
+    .paper-editable h1 {
+      font-size: 22pt;
+      text-align: center;
+      margin-bottom: 10pt;
+      font-weight: 700;
+    }
+
+    .paper-editable h2 {
+      font-size: 19pt;
+      margin-top: 10pt;
+      margin-bottom: 6pt;
+      font-weight: 700;
+    }
+
+    .paper-editable p {
+      margin-bottom: 7pt;
+    }
+
+    .paper-editable .choice-item {
+      margin-right: 18pt;
+      margin-bottom: 4pt;
+    }
+
+    .paper-foot {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 5pt;
+      margin-top: 6pt;
+      font-family: 'Cairo', sans-serif;
+      font-size: 10pt;
+      color: #334155;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1;
+    }
+
+    .new-page-cta {
+      margin-top: 28px;
+      background: var(--bg-card);
+      border: 2px dashed var(--accent);
+      color: var(--accent);
+      font-family: 'Cairo', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      padding: 14px 40px;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .new-page-cta:hover {
+      background: var(--accent);
+      color: #ffffff;
+      transform: translateY(-2px);
+    }
+
+    .app-footer {
+      text-align: center;
+      padding: 16px;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-subtle);
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+      body {
+        background: #ffffff !important;
+        background-image: none !important;
+      }
+      .topbar, .ribbon-wrapper, .sidebar-col, .nav-col, .canvas-hud, .page-header-strip, .new-page-cta, .app-footer {
+        display: none !important;
+      }
+      .studio-grid, .canvas-center {
+        padding: 0 !important;
+        margin: 0 !important;
+        display: block !important;
+        overflow: visible !important;
+      }
+      .pages-list {
+        transform: none !important;
+        gap: 0 !important;
+        display: block !important;
+      }
+      .page-unit {
+        display: block !important;
+        page-break-after: always;
+        break-after: page;
+      }
+      .page-unit:last-child {
+        page-break-after: auto;
+        break-after: auto;
+      }
+      .a4-paper {
+        width: 210mm !important;
+        height: 297mm !important;
+        background: #ffffff !important;
+        box-shadow: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+        padding: 15mm 18mm 14mm 18mm !important;
+      }
+      .paper-editable {
+        overflow: visible !important;
+      }
+      .paper-editable * {
+        color: #000000 !important;
+        background: transparent !important;
+      }
+    }
+
+    @media (max-width: 1220px) {
+      .nav-col {
+        display: none;
+      }
+    }
+    @media (max-width: 940px) {
+      .studio-grid {
+        flex-direction: column;
+      }
+      .sidebar-col {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">ص</div>
+      <div class="brand-info">
+        <h1>صِياغَة</h1>
+        <p>استوديو إعداد المذكرات بالذكاء الاصطناعي</p>
+      </div>
+    </div>
+
+    <div class="doc-pill">
+      <span>📝</span>
+      <input type="text" id="docTitle" value="مذكرة المراجعة النهائية" placeholder="عنوان المستند..." />
+    </div>
+
+    <div class="top-actions">
+      <button class="btn btn-ghost" onclick="toggleFocusMode()">🧘 وضع التركيز</button>
+      <label class="btn btn-ghost">
+        📂 استيراد Word
+        <input type="file" id="docxUpload" accept=".docx" hidden />
+      </label>
+      <button class="btn btn-word" onclick="exportToWord()">📘 تحميل Word</button>
+      <button class="btn btn-accent" onclick="exportToPDF()">🖨️ طباعة / PDF</button>
+    </div>
+  </header>
+
+  <div class="ribbon-wrapper">
+    <div class="ribbon-bar">
+      <div class="ribbon-group">
+        <button class="r-btn active-pill" onclick="addNewPage()">➕ صفحة جديدة</button>
+        <button class="r-btn" onclick="autoPaginateAll()">📑 تقسيم الصفحات تلقائياً</button>
+      </div>
+
+      <div class="ribbon-group">
+        <button class="r-btn" onclick="execCmd('bold')"><b>B</b></button>
+        <button class="r-btn" onclick="execCmd('underline')"><u>U</u></button>
+        <button class="r-btn" onclick="execCmd('formatBlock', 'h2')">عنوان رئيسي</button>
+        <button class="r-btn" onclick="insertTermItem()">📌 مصطلح مرقم</button>
+      </div>
+
+      <div class="ribbon-group">
+        <button class="r-btn" onclick="execCmd('justifyRight')">يمين</button>
+        <button class="r-btn" onclick="execCmd('justifyCenter')">توسيط</button>
+        <button class="r-btn" onclick="execCmd('justifyFull')">ضبط كامل</button>
+      </div>
+
+      <div class="ribbon-group">
+        <select class="r-select" id="fontFamilySelect" onchange="applyTypography()">
+          <option value="'Amiri', serif">خط أميري (مذكرات وكتب)</option>
+          <option value="'Cairo', sans-serif">خط كايرو (عصري واضح)</option>
+          <option value="'Traditional Arabic', serif">Traditional Arabic</option>
+        </select>
+
+        <select class="r-select" id="fontSizeSelect" onchange="applyTypography()">
+          <option value="15">15 pt</option>
+          <option value="16">16 pt</option>
+          <option value="17" selected>17 pt (قياسي للطباعة)</option>
+          <option value="18">18 pt</option>
+          <option value="20">20 pt</option>
+        </select>
+      </div>
+
+      <div class="ribbon-group">
+        <button class="r-btn active-pill" onclick="magicFormatActive()">✨ تنسيق تلقائي</button>
+        <button class="r-btn" onclick="stripColors()">⬛ أبيض وأسود</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="studio-grid">
+    <aside class="sidebar-col">
+      <!-- خانة الذكاء الاصطناعي الحقيقي المباشر -->
+      <div class="ai-card">
+        <div class="ai-header">
+          <span class="ai-badge">✨ مساعد صِياغَة الذكي</span>
+          <span class="ai-status-pill">متصل ومجاني</span>
+        </div>
+
+        <textarea id="aiPromptInput" class="ai-prompt-box" placeholder="اطلب أي صياغة وسأكتبها لك كاملة... مثال: اكتب مذكرة شكوى طالب موجهة لعميد الكلية بخصوص تعارض موعد امتحانين"></textarea>
+
+        <div class="ai-chips">
+          <button class="ai-chip" onclick="setAIPrompt('اكتب مذكرة شكوى طالب موجهة لعميد الكلية بأسلوب قانوني رصين')">مذكرة شكوى طالب</button>
+          <button class="ai-chip" onclick="setAIPrompt('اكتب ملخص شامل في مصادر الالتزام بالقانون المدني مع 5 أسئلة صح وخطأ')">ملخص قانوني</button>
+          <button class="ai-chip" onclick="setAIPrompt('اكتب طلب عذر غياب رسمي عن امتحان الميدترم لظروف مرضية')">طلب عذر غياب</button>
+        </div>
+
+        <div class="ai-actions-row">
+          <button class="btn-ai-run" id="aiRunBtn" onclick="generateWithAI(false)">
+            ⚡ اكتب المستند
+          </button>
+          <button class="btn-ai-append" id="aiAppendBtn" onclick="generateWithAI(true)" title="إضافة النص المولد في نهاية المستند الحالي">
+            ➕ أضف للصفحة
+          </button>
+        </div>
+
+        <span class="ai-api-toggle" onclick="document.getElementById('aiKeyDrawer').classList.toggle('open')">
+          🔑 مفتاح Gemini API (اختياري)
+        </span>
+        <div class="ai-key-drawer" id="aiKeyDrawer">
+          <input type="password" id="geminiApiKey" placeholder="ضع مفتاح AIza... هنا إن وجد" onchange="saveApiKey(this.value)" />
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <div class="card-title">⭐ قوالبي المحفوظة</div>
+        <button class="btn-save-tpl" onclick="saveCurrentAsCustomTemplate()">
+          💾 حفظ المستند الحالي كقالب جديد
+        </button>
+        <div id="customTemplatesList"></div>
+      </div>
+
+      <div class="glass-card">
+        <div class="card-title">📄 قوالب أساسية جاهزة</div>
+        <button class="tpl-card" onclick="loadTemplate('revision')">
+          مذكرة مراجعة ومصطلحات
+          <span>صفحة غلاف + صفحة أسئلة بخط 17pt</span>
+        </button>
+        <button class="tpl-card" onclick="loadTemplate('excuse')">
+          طلب عذر غياب رسمي
+          <span>صيغة جامعية جاهزة للطباعة</span>
+        </button>
+        <button class="tpl-card" onclick="resetDocument()">
+          🗑️ مستند جديد فارغ
+          <span>البدء بصفحة واحدة نظيفة</span>
+        </button>
+      </div>
+
+      <div class="glass-card">
+        <div class="card-title">👁️ إضاءة مريحة للعين</div>
+        <div class="theme-switcher">
+          <button class="theme-opt active" id="theme-light" onclick="setTheme('light')">نهاري هادئ</button>
+          <button class="theme-opt" id="theme-warm" onclick="setTheme('warm')">ورق دافئ</button>
+          <button class="theme-opt" id="theme-dark" onclick="setTheme('dark')">ليلي مريح</button>
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <div class="card-title">⚙️ إعدادات كل الصفحات</div>
+        <div class="field-box">
+          <label>ترويسة أعلى كل صفحة</label>
+          <input type="text" id="runningHeaderInput" placeholder="مثال: جامعة حلوان الأهلية - الفرقة الثانية" oninput="syncAllHeadersFooters()" />
+        </div>
+
+        <div class="field-box">
+          <label>علامة مائية في خلفية الورق</label>
+          <input type="text" id="watermarkInput" placeholder="مثال: صِياغَة - نسخة المراجعة" oninput="syncAllHeadersFooters()" />
+        </div>
+
+        <label class="check-item">
+          <input type="checkbox" id="hideAnswersCheck" onchange="magicFormatAll()" />
+          إخفاء الإجابات (نسخة اختبار)
+        </label>
+
+        <label class="check-item">
+          <input type="checkbox" id="pageNumbersCheck" checked onchange="syncAllHeadersFooters()" />
+          ترقيم الصفحات أسفل كل ورقة
+        </label>
+      </div>
+    </aside>
+
+    <main class="canvas-center">
+      <div class="canvas-hud">
+        <span id="saveIndicator">✅ محفوظ تلقائياً</span>
+        <div class="zoom-pill">
+          <span>حجم العرض:</span>
+          <button onclick="adjustZoom(-0.1)">−</button>
+          <span id="zoomValue">100%</span>
+          <button onclick="adjustZoom(0.1)">+</button>
+        </div>
+        <span id="counterIndicator">الصفحات: 1 | الكلمات: 0</span>
+      </div>
+
+      <div class="pages-list" id="pagesList"></div>
+
+      <button class="new-page-cta" onclick="addNewPage()">
+        ➕ إضافة صفحة A4 جديدة
+      </button>
+    </main>
+
+    <aside class="nav-col">
+      <div class="glass-card">
+        <div class="card-title">🗂️ خريطة الصفحات</div>
+        <div class="page-nav-list" id="pageNavList"></div>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="app-footer">
+    تطوير وتصميم: <strong>عمرو أحمد ربيع</strong> | للتواصل: <strong>01553845026</strong> | منصة <strong>صِياغَة</strong> لإعداد وتنسيق المستندات
+  </footer>
+
+  <script>
+    const pagesList = document.getElementById('pagesList');
+    const pageNavList = document.getElementById('pageNavList');
+    const docTitleInput = document.getElementById('docTitle');
+    const runningHeaderInput = document.getElementById('runningHeaderInput');
+    const watermarkInput = document.getElementById('watermarkInput');
+    const fontFamilySelect = document.getElementById('fontFamilySelect');
+    const fontSizeSelect = document.getElementById('fontSizeSelect');
+    const saveIndicator = document.getElementById('saveIndicator');
+    const counterIndicator = document.getElementById('counterIndicator');
+
+    const STORAGE_KEY = 'siyagha_studio_v7';
+    const CUSTOM_TPL_KEY = 'siyagha_custom_templates_v1';
+    const API_KEY_STORAGE = 'siyagha_gemini_key';
+
+    let activeEditable = null;
+    let zoomLevel = 1;
+
+    function setAIPrompt(text) {
+      document.getElementById('aiPromptInput').value = text;
+    }
+
+    function saveApiKey(val) {
+      localStorage.setItem(API_KEY_STORAGE, val.trim());
+    }
+
+    // تحويل النص العربي المولد إلى HTML منسق للطباعة
+    function convertAITextToCleanHTML(rawText) {
+      let clean = rawText
+        .replace(/```html|```markdown|```/gi, '')
+        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+        .trim();
+
+      // إذا كان الرد يحتوي على وسوم HTML جاهزة
+      if (/<(h1|h2|p)\b/i.test(clean)) {
+        return clean;
+      }
+
+      // تحويل الأسطر العادية إلى فقرات وعناوين منسقة
+      return clean.split('\n').map(line => {
+        let t = line.trim();
+        if (!t) return '';
+        if (t.startsWith('# ')) return `<h1>${t.replace(/^#\s+/, '')}</h1>`;
+        if (t.startsWith('## ') || t.startsWith('### ')) return `<h2>${t.replace(/^#{2,3}\s+/, '')}</h2>`;
+        if (/^(أولاً|ثانياً|ثالثاً|رابعاً|خامساً|الموضوع|الوقائع|الطلبات|مقدمة)\b/.test(t) && t.length < 75) {
+          return `<h2>${t}</h2>`;
+        }
+        return `<p>${t}</p>`;
+      }).filter(Boolean).join('');
+    }
+
+    // الاتصال الفعلي بالذكاء الاصطناعي لكتابة المذكرات والشكاوى والشروحات كاملة
+    async function generateWithAI(appendMode = false) {
+      const prompt = document.getElementById('aiPromptInput').value.trim();
+      if (!prompt) {
+        alert('اكتب طلبك في خانة الذكاء الاصطناعي أولاً (مثال: اكتب مذكرة شكوى طالب).');
+        return;
+      }
+
+      const runBtn = document.getElementById('aiRunBtn');
+      const appendBtn = document.getElementById('aiAppendBtn');
+      runBtn.disabled = true;
+      appendBtn.disabled = true;
+      runBtn.textContent = '⏳ جاري الكتابة والصياغة...';
+
+      const apiKey = localStorage.getItem(API_KEY_STORAGE) || document.getElementById('geminiApiKey').value.trim();
+
+      const systemPersona = `أنت مستشار قانوني وأكاديمي مصري محترف ومساعد كتابة ذكي. اكتب النص المطلوب كاملاً باللغة العربية الفصحى الرصينة والاحترافية دون أي مقدمات جانبية أو عبارات مثل "بالتأكيد" أو "إليك النص".
+- إذا طلب المستخدم (مذكرة شكوى طالب) أو (طلب رسمي): اكتب الترويسة الرسمية (السيد الأستاذ الدكتور / عميد الكلية...)، ثم تحية طيبة، ثم عرض الوقائع والأسباب بأسلوب قانوني وأكاديمي مقنع، ثم الطلبات الختامية، ثم التوقيع والبيانات على اليسار.
+- إذا طلب (مذكرة دراسية) أو (ملخص) أو (أسئلة): اكتب شرحاً وافياً ومنظماً بعناوين واضحة ونقاط مرقمة وأسئلة مع إجاباتها بين قوسين مثل (صح) أو (خطأ).
+- نسّق المخرجات باستخدام وسوم HTML بسيطة فقط: <h1> للعنوان الرئيسي، <h2> للعناوين الفرعية، <p> للفقرات، و <b> للتأكيد. لا تستخدم أي ألوان أو جداول أو نجوم ماركداون.`;
+
+      try {
+        let generatedText = '';
+
+        if (apiKey) {
+          const response = await fetch(`[https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$](https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$){encodeURIComponent(apiKey)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: `${systemPersona}\n\nالمطلوب كتابته: ${prompt}` }] }]
+            })
+          });
+          const data = await response.json();
+          generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        } else {
+          // الاتصال المباشر بمحرك الذكاء الاصطناعي المجاني المفتوح بدون الحاجة لمفتاح API
+          const response = await fetch('[https://text.pollinations.ai/](https://text.pollinations.ai/)', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              messages: [
+                { role: 'system', content: systemPersona },
+                { role: 'user', content: prompt }
+              ],
+              model: 'openai',
+              seed: Math.floor(Math.random() * 10000)
+            })
+          });
+
+          if (!response.ok) throw new Error('تعذر الاتصال بخادم الذكاء الاصطناعي حالياً.');
+          generatedText = await response.text();
+        }
+
+        if (!generatedText.trim()) {
+          throw new Error('لم يصل نص من الذكاء الاصطناعي، حاول مرة أخرى.');
+        }
+
+        const formattedHTML = convertAITextToCleanHTML(generatedText);
+
+        if (appendMode) {
+          const target = activeEditable || document.querySelector('.paper-editable');
+          target.innerHTML += formattedHTML;
+          autoPaginateAll();
+        } else {
+          pagesList.innerHTML = '';
+          docTitleInput.value = prompt.slice(0, 45);
+          createPageUnit(formattedHTML);
+          autoPaginateAll();
+        }
+
+      } catch (err) {
+        alert('حدث خطأ أثناء توليد النص: ' + err.message + '\nتأكد من اتصالك بالإنترنت.');
+      } finally {
+        runBtn.disabled = false;
+        appendBtn.disabled = false;
+        runBtn.textContent = '⚡ اكتب المستند';
+      }
+    }
+
+    function saveCurrentAsCustomTemplate() {
+      const defaultName = docTitleInput.value.trim() || 'قالب مخصص جديد';
+      const tplName = prompt('اكتب اسماً لحفظ هذا المستند في قائمة قوالبك:', defaultName);
+      if (!tplName || !tplName.trim()) return;
+
+      const pagesHTML = Array.from(document.querySelectorAll('.paper-editable')).map(ed => ed.innerHTML);
+      const savedTemplates = JSON.parse(localStorage.getItem(CUSTOM_TPL_KEY) || '[]');
+
+      savedTemplates.unshift({
+        id: Date.now().toString(),
+        name: tplName.trim(),
+        runningHeader: runningHeaderInput.value,
+        watermark: watermarkInput.value,
+        pages: pagesHTML
+      });
+
+      localStorage.setItem(CUSTOM_TPL_KEY, JSON.stringify(savedTemplates));
+      renderCustomTemplates();
+      alert(`تم حفظ "${tplName.trim()}" في قائمة قوالبك بنجاح!`);
+    }
+
+    function renderCustomTemplates() {
+      const container = document.getElementById('customTemplatesList');
+      const savedTemplates = JSON.parse(localStorage.getItem(CUSTOM_TPL_KEY) || '[]');
+
+      if (savedTemplates.length === 0) {
+        container.innerHTML = `<p style="font-size:11.5px; color:var(--text-secondary); text-align:center;">لا توجد قوالب محفوظة بعد.</p>`;
+        return;
+      }
+
+      container.innerHTML = savedTemplates.map(tpl => `
+        <div class="custom-tpl-row">
+          <span class="custom-tpl-name" onclick="applyCustomTemplate('${tpl.id}')" title="اضغط لفتح القالب">📄 ${tpl.name}</span>
+          <button class="custom-tpl-del" onclick="deleteCustomTemplate('${tpl.id}')" title="حذف القالب">✕</button>
+        </div>
+      `).join('');
+    }
+
+    function applyCustomTemplate(id) {
+      const savedTemplates = JSON.parse(localStorage.getItem(CUSTOM_TPL_KEY) || '[]');
+      const tpl = savedTemplates.find(t => t.id === id);
+      if (!tpl) return;
+
+      pagesList.innerHTML = '';
+      docTitleInput.value = tpl.name;
+      runningHeaderInput.value = tpl.runningHeader || '';
+      watermarkInput.value = tpl.watermark || '';
+      (tpl.pages || ['<p><br></p>']).forEach(html => createPageUnit(html));
+      syncAllHeadersFooters();
+      updateStats();
+      scheduleSave();
+    }
+
+    function deleteCustomTemplate(id) {
+      if (!confirm('هل تريد حذف هذا القالب المحفوظ؟')) return;
+      let savedTemplates = JSON.parse(localStorage.getItem(CUSTOM_TPL_KEY) || '[]');
+      savedTemplates = savedTemplates.filter(t => t.id !== id);
+      localStorage.setItem(CUSTOM_TPL_KEY, JSON.stringify(savedTemplates));
+      renderCustomTemplates();
+    }
+
+    function setTheme(mode) {
+      document.body.classList.remove('warm-mode', 'dark-mode');
+      document.querySelectorAll('.theme-opt').forEach(b => b.classList.remove('active'));
+      if (mode === 'warm') {
+        document.body.classList.add('warm-mode');
+        document.getElementById('theme-warm').classList.add('active');
+      } else if (mode === 'dark') {
+        document.body.classList.add('dark-mode');
+        document.getElementById('theme-dark').classList.add('active');
+      } else {
+        document.getElementById('theme-light').classList.add('active');
+      }
+      localStorage.setItem('siyagha_ui_theme', mode);
+    }
+
+    function toggleFocusMode() {
+      document.body.classList.toggle('focus-mode');
+    }
+
+    function createPageUnit(htmlContent = '<p><br></p>', insertAfterUnit = null) {
+      const unit = document.createElement('div');
+      unit.className = 'page-unit';
+
+      unit.innerHTML = `
+        <div class="page-header-strip">
+          <span class="page-tag">صفحة 1</span>
+          <div class="page-tools">
+            <button class="p-tool-btn" onclick="insertPageAfter(this)">➕ إضافة صفحة بعدها</button>
+            <button class="p-tool-btn" onclick="duplicatePage(this)">📋 تكرار</button>
+            <button class="p-tool-btn del" onclick="removePage(this)">🗑️ حذف</button>
+          </div>
+        </div>
+        <div class="a4-paper">
+          <div class="running-head"></div>
+          <div class="watermark-text"></div>
+          <div class="paper-editable" contenteditable="true" spellcheck="false">${htmlContent}</div>
+          <div class="paper-foot">
+            <span class="foot-title"></span>
+            <span class="foot-page"></span>
+          </div>
+        </div>
+      `;
+
+      const editable = unit.querySelector('.paper-editable');
+      editable.addEventListener('focus', () => {
+        activeEditable = editable;
+        highlightActiveNav(unit);
+      });
+      editable.addEventListener('input', () => {
+        handleOverflow(editable);
+        updateStats();
+        scheduleSave();
+      });
+
+      if (insertAfterUnit && insertAfterUnit.parentNode === pagesList) {
+        insertAfterUnit.after(unit);
+      } else {
+        pagesList.appendChild(unit);
+      }
+
+      applyTypography();
+      syncAllHeadersFooters();
+      updateStats();
+      activeEditable = editable;
+      return unit;
+    }
+
+    function addNewPage(html = '<p><br></p>') {
+      const unit = createPageUnit(html);
+      const ed = unit.querySelector('.paper-editable');
+      ed.focus();
+      unit.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      scheduleSave();
+      return ed;
+    }
+
+    function insertPageAfter(btn) {
+      const currentUnit = btn.closest('.page-unit');
+      const newUnit = createPageUnit('<p><br></p>', currentUnit);
+      newUnit.querySelector('.paper-editable').focus();
+      scheduleSave();
+    }
+
+    function duplicatePage(btn) {
+      const currentUnit = btn.closest('.page-unit');
+      const html = currentUnit.querySelector('.paper-editable').innerHTML;
+      const newUnit = createPageUnit(html, currentUnit);
+      newUnit.querySelector('.paper-editable').focus();
+      scheduleSave();
+    }
+
+    function removePage(btn) {
+      const units = document.querySelectorAll('.page-unit');
+      if (units.length <= 1) {
+        alert('لا يمكن حذف الصفحة الوحيدة.');
+        return;
+      }
+      if (confirm('هل تريد حذف هذه الصفحة؟')) {
+        btn.closest('.page-unit').remove();
+        syncAllHeadersFooters();
+        updateStats();
+        scheduleSave();
+      }
+    }
+
+    function handleOverflow(editable) {
+      if (editable.scrollHeight > editable.clientHeight + 8) {
+        const lastEl = editable.lastElementChild;
+        if (lastEl && editable.children.length > 1) {
+          const currentUnit = editable.closest('.page-unit');
+          let nextUnit = currentUnit.nextElementSibling;
+          if (!nextUnit) {
+            nextUnit = createPageUnit('', currentUnit);
+          }
+          const nextEditable = nextUnit.querySelector('.paper-editable');
+          nextEditable.prepend(lastEl);
+          nextEditable.focus();
+        }
+      }
+    }
+
+    function syncAllHeadersFooters() {
+      const units = document.querySelectorAll('.page-unit');
+      const total = units.length;
+      const headerText = runningHeaderInput.value.trim();
+      const watermarkText = watermarkInput.value.trim();
+      const showNums = document.getElementById('pageNumbersCheck').checked;
+      const docTitle = docTitleInput.value.trim();
+
+      pageNavList.innerHTML = '';
+
+      units.forEach((unit, idx) => {
+        const num = idx + 1;
+        unit.querySelector('.page-tag').textContent = `صفحة ${num} من ${total}`;
+        unit.querySelector('.running-head').textContent = headerText;
+        unit.querySelector('.watermark-text').textContent = watermarkText;
+        unit.querySelector('.foot-title').textContent = showNums ? docTitle : '';
+        unit.querySelector('.foot-page').textContent = showNums ? `صفحة ${num} من ${total}` : '';
+
+        const previewText = unit.querySelector('.paper-editable').innerText.trim().slice(0, 20) || 'صفحة فارغة';
+        const navItem = document.createElement('div');
+        navItem.className = 'page-nav-item';
+        navItem.innerHTML = `<span>صفحة ${num}</span><small style="opacity:0.7;font-weight:500;">${previewText}...</small>`;
+        navItem.onclick = () => {
+          unit.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          unit.querySelector('.paper-editable').focus();
+        };
+        pageNavList.appendChild(navItem);
+      });
+
+      scheduleSave();
+    }
+
+    function highlightActiveNav(activeUnit) {
+      const units = Array.from(document.querySelectorAll('.page-unit'));
+      const index = units.indexOf(activeUnit);
+      document.querySelectorAll('.page-nav-item').forEach((item, i) => {
+        item.classList.toggle('active', i === index);
+      });
+    }
+
+    function applyTypography() {
+      const font = fontFamilySelect.value;
+      const size = fontSizeSelect.value + 'pt';
+      document.querySelectorAll('.paper-editable').forEach(ed => {
+        ed.style.fontFamily = font;
+        ed.style.fontSize = size;
+      });
+      scheduleSave();
+    }
+
+    function autoPaginateAll() {
+      const allEditables = Array.from(document.querySelectorAll('.paper-editable'));
+      const nodes = [];
+      allEditables.forEach(ed => {
+        Array.from(ed.children).forEach(ch => nodes.push(ch.cloneNode(true)));
+      });
+      if (!nodes.length) return;
+
+      pagesList.innerHTML = '';
+      let currentUnit = createPageUnit('');
+      let currentEd = currentUnit.querySelector('.paper-editable');
+
+      nodes.forEach(node => {
+        currentEd.appendChild(node);
+        if (currentEd.scrollHeight > currentEd.clientHeight + 4 && currentEd.children.length > 1) {
+          currentEd.removeChild(node);
+          currentUnit = createPageUnit('');
+          currentEd = currentUnit.querySelector('.paper-editable');
+          currentEd.appendChild(node);
+        }
+      });
+
+      syncAllHeadersFooters();
+      updateStats();
+      scheduleSave();
+    }
+
+    function formatArabicHTML(rawText, hideAnswers) {
+      let cleaned = rawText
+        .replace(/\r\n/g, '\n')
+        .replace(/[ \t]+/g, ' ')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+
+      cleaned = cleaned
+        .replace(/\s+([،؛؟.!:])/g, '$1')
+        .replace(/([،؛؟.!:])(?=[^\s\n\)»"])/g, '$1 ');
+
+      return cleaned.split('\n').map(line => {
+        let t = line.trim();
+        if (!t) return '';
+        if (/^(أولاً|ثانياً|ثالثاً|رابعاً|خامساً|الفصل|المبحث|المطلب|الباب|القسم|القاعدة|البند)\b/.test(t) || (t.length < 65 && t.endsWith(':'))) {
+          return `<h2>${t}</h2>`;
+        }
+        if (/^(\d+[\-\.\)]|س\d+\s*[:\-])/.test(t)) {
+          if (hideAnswers) {
+            t = t.replace(/\((صح|خطأ|صواب|✓|✗|[أبجدهـ])\)\s*$/g, '( ....... )');
+          } else {
+            t = t.replace(/\((صح|خطأ|صواب|✓|✗|[أبجدهـ])\)\s*$/g, '<b>($1)</b>');
+          }
+          return `<p>${t}</p>`;
+        }
+        if (/^([أبجدهـ][\-\.\)])/.test(t)) {
+          return `<p class="choice-item">${t}</p>`;
+        }
+        return `<p>${t}</p>`;
+      }).filter(Boolean).join('');
+    }
+
+    function magicFormatActive() {
+      const target = activeEditable || document.querySelector('.paper-editable');
+      if (!target) return;
+      const hideAns = document.getElementById('hideAnswersCheck').checked;
+      target.innerHTML = formatArabicHTML(target.innerText, hideAns);
+      autoPaginateAll();
+    }
+
+    function magicFormatAll() {
+      const hideAns = document.getElementById('hideAnswersCheck').checked;
+      document.querySelectorAll('.paper-editable').forEach(ed => {
+        ed.innerHTML = formatArabicHTML(ed.innerText, hideAns);
+      });
+      scheduleSave();
+    }
+
+    function stripColors() {
+      document.querySelectorAll('.paper-editable *').forEach(el => {
+        el.style.color = '#000000';
+        el.style.backgroundColor = 'transparent';
+        el.removeAttribute('color');
+      });
+      scheduleSave();
+    }
+
+    function insertTermItem() {
+      const target = activeEditable || document.querySelector('.paper-editable');
+      target.focus();
+      const num = document.querySelectorAll('.paper-editable p').length + 1;
+      document.execCommand('insertHTML', false, `<p><b>${num}. المصطلح:</b> اكتب تعريف المصطلح هنا...</p>`);
+    }
+
+    function execCmd(cmd, val = null) {
+      document.execCommand(cmd, false, val);
+    }
+
+    function adjustZoom(delta) {
+      zoomLevel = Math.min(1.3, Math.max(0.6, +(zoomLevel + delta).toFixed(1)));
+      document.documentElement.style.setProperty('--zoom-scale', zoomLevel);
+      document.getElementById('zoomValue').textContent = Math.round(zoomLevel * 100) + '%';
+    }
+
+    function updateStats() {
+      const eds = document.querySelectorAll('.paper-editable');
+      let words = 0;
+      eds.forEach(ed => {
+        const txt = ed.innerText.trim();
+        if (txt) words += txt.split(/\s+/).length;
+      });
+      counterIndicator.textContent = `الصفحات: ${eds.length} | الكلمات: ${words}`;
+    }
+
+    function loadTemplate(type) {
+      pagesList.innerHTML = '';
+      if (type === 'revision') {
+        docTitleInput.value = 'مذكرة المراجعة النهائية - الفرقة الثانية';
+        runningHeaderInput.value = 'جامعة حلوان الأهلية - كلية الدراسات القانونية';
+        createPageUnit(`
+          <p style="text-align:center;"><b>جامعة حلوان الأهلية</b></p>
+          <p style="text-align:center;"><b>كلية الدراسات القانونية - برنامج الدراسات القانونية باللغة العربية</b></p>
+          <h1 style="margin-top:36pt;">مذكرة المراجعة النهائية</h1>
+          <p style="text-align:center;"><b>الفرقة الثانية - العام الجامعي 2026</b></p>
+          <h2 style="margin-top:28pt;">أولاً: المصطلحات القانونية المقررة</h2>
+          <p><b>1. القانون:</b> مجموعة القواعد العامة المجردة التي تنظم سلوك الأفراد في المجتمع وتقترن بجزاء توقعه السلطة العامة.</p>
+          <p><b>2. القاعدة القانونية:</b> وحدة البناء التي يتكون منها القانون، وتتميز بالعمومية والتجريد والإلزام.</p>
+        `);
+        createPageUnit(`
+          <h2>ثانياً: أسئلة الصواب والخطأ</h2>
+          <p>1- القاعدة القانونية قاعدة سلوك اجتماعي عامة ومجردة. (صح)</p>
+          <p>2- يقتصر الجزاء في القواعد القانونية على الجزاء الجنائي فقط. (خطأ)</p>
+          <p style="text-align:center; margin-top:40pt;"><b>إعداد وتنسيق: عمرو أحمد ربيع</b></p>
+        `);
+      } else if (type === 'excuse') {
+        docTitleInput.value = 'طلب عذر غياب عن امتحان';
+        runningHeaderInput.value = '';
+        createPageUnit(`
+          <p style="text-align:center;"><b>جامعة حلوان الأهلية</b></p>
+          <p style="text-align:center;"><b>كلية الدراسات القانونية - برنامج الدراسات القانونية باللغة العربية</b></p>
+          <p><b>السيد الأستاذ الدكتور / منسق البرنامج</b></p>
+          <p>تحية طيبة وبعد،،،</p>
+          <p>مقدمه لسيادتكم الطالب / ........................................ المقيد بالفرقة الثانية بالكلية، برقم جامعي (....................).</p>
+          <p>أتقدم لسيادتكم بطلب قبول عذري عن عدم حضور امتحان مادة (....................) المنعقد بتاريخ .... / .... / 2026، وذلك نظراً لظروف قهرية تمثلت في (........................................)، ومرفق لسيادتكم المستند الرسمي الدال على ذلك.</p>
+          <p>لذا، نلتمس من سيادتكم التكرم بالموافقة على قبول العذر واتخاذ اللازم قانوناً.</p>
+          <p style="text-align:center;"><b>وتفضلوا بقبول فائق الاحترام والتقدير،،،</b></p>
+          <p style="text-align:left; margin-top:20pt;"><b>مقدمه لسيادتكم</b><br>الاسم: ............................<br>التوقيع: ..........................<br>التاريخ: .... / .... / 2026</p>
+        `);
+      }
+      syncAllHeadersFooters();
+      updateStats();
+      scheduleSave();
+    }
+
+    function resetDocument() {
+      if (confirm('هل تريد مسح جميع الصفحات والبدء بصفحة جديدة؟')) {
+        pagesList.innerHTML = '';
+        docTitleInput.value = 'مستند جديد';
+        runningHeaderInput.value = '';
+        watermarkInput.value = '';
+        createPageUnit('<p><br></p>');
+        scheduleSave();
+      }
+    }
+
+    let saveTimer;
+    docTitleInput.addEventListener('input', syncAllHeadersFooters);
+
+    function scheduleSave() {
+      saveIndicator.textContent = '⏳ جاري الحفظ...';
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        const pages = Array.from(document.querySelectorAll('.paper-editable')).map(ed => ed.innerHTML);
+        const state = {
+          title: docTitleInput.value,
+          runningHeader: runningHeaderInput.value,
+          watermark: watermarkInput.value,
+          fontFamily: fontFamilySelect.value,
+          fontSize: fontSizeSelect.value,
+          pages
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        saveIndicator.textContent = '✅ محفوظ تلقائياً';
+      }, 600);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedTheme = localStorage.getItem('siyagha_ui_theme');
+      if (savedTheme) setTheme(savedTheme);
+
+      const savedKey = localStorage.getItem(API_KEY_STORAGE);
+      if (savedKey) document.getElementById('geminiApiKey').value = savedKey;
+
+      renderCustomTemplates();
+
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        try {
+          const state = JSON.parse(raw);
+          docTitleInput.value = state.title || 'مذكرة مراجعة';
+          runningHeaderInput.value = state.runningHeader || '';
+          watermarkInput.value = state.watermark || '';
+          if (state.fontFamily) fontFamilySelect.value = state.fontFamily;
+          if (state.fontSize) fontSizeSelect.value = state.fontSize;
+          if (Array.isArray(state.pages) && state.pages.length > 0) {
+            state.pages.forEach(html => createPageUnit(html));
+            return;
+          }
+        } catch (e) {}
+      }
+
+      createPageUnit(`
+        <h1>بسم الله الرحمن الرحيم</h1>
+        <p>مرحباً بك في استوديو <b>صِياغَة</b> لتنسيق المذكرات والمستندات بالذكاء الاصطناعي.</p>
+        <p>اكتب في خانة <b>(مساعد صِياغَة الذكي)</b> على اليمين طلبك مثل: <i>"اكتب مذكرة شكوى طالب موجهة لعميد الكلية"</i> وسأقوم بصياغتها وكتابتها كاملة وتوزيعها على صفحات A4 تلقائياً.</p>
+      `);
+    });
+
+    document.getElementById('docxUpload').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const buffer = await file.arrayBuffer();
+        const res = await mammoth.convertToHtml({ arrayBuffer: buffer });
+        const clean = res.value.replace(/ style="[^"]*"/g, '');
+        pagesList.innerHTML = '';
+        createPageUnit(clean);
+        docTitleInput.value = file.name.replace(/\.docx$/i, '');
+        autoPaginateAll();
+      } catch (err) {
+        alert('تعذر قراءة ملف Word.');
+      }
+    });
+
+    async function exportToWord() {
+      const { Document, Packer, Paragraph, TextRun, AlignmentType, PageBreak } = window.docx;
+      const sizeHalfPt = parseInt(fontSizeSelect.value, 10) * 2;
+      const editables = Array.from(document.querySelectorAll('.paper-editable'));
+      const children = [];
+
+      editables.forEach((ed, pageIndex) => {
+        Array.from(ed.children).forEach(el => {
+          const text = el.innerText.trim();
+          if (!text) return;
+
+          let align = AlignmentType.RIGHT;
+          if (el.style.textAlign === 'center' || el.tagName === 'H1') align = AlignmentType.CENTER;
+          if (el.style.textAlign === 'left') align = AlignmentType.LEFT;
+
+          const isHeading = el.tagName === 'H1' || el.tagName === 'H2';
+
+          children.push(new Paragraph({
+            bidirectional: true,
+            alignment: align,
+            spacing: { after: 150, line: 360 },
+            children: [
+              new TextRun({
+                text: text,
+                rightToLeft: true,
+                bold: isHeading || el.querySelector('b, strong') !== null,
+                size: isHeading ? sizeHalfPt + 4 : sizeHalfPt,
+                font: 'Traditional Arabic',
+                color: '000000'
+              })
+            ]
+          }));
+        });
+
+        if (pageIndex < editables.length - 1) {
+          children.push(new Paragraph({ children: [new PageBreak()] }));
+        }
+      });
+
+      const doc = new Document({
+        sections: [{
+          properties: { page: { margin: { top: 900, right: 1000, bottom: 900, left: 1000 } } },
+          children
+        }]
+      });
+
+      const blob = await Packer.toBlob(doc);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${docTitleInput.value || 'مستند-صياغة'}.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportToPDF() {
+      const orig = document.title;
+      document.title = docTitleInput.value || 'مستند-صياغة';
+      window.print();
+      document.title = orig;
+    }
+  </script>
+</body>
+</html>
